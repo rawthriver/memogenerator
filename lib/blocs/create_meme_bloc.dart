@@ -9,13 +9,15 @@ class CreateMemeBloc {
   final selectedSubject = BehaviorSubject<MemeText?>();
   final stateSubject = BehaviorSubject<MemeState>.seeded(MemeState.empty());
 
+  Stream<List<MemeText>> observeMemeTexts() =>
+      memeTextsSubject.distinct((previous, next) => listEquals(previous, next));
   Stream<MemeText?> observeSelected() => selectedSubject.distinct();
   Stream<MemeState> observeState() => stateSubject;
 
   CreateMemeBloc() {
     Rx.combineLatest2(
-      memeTextsSubject.distinct((previous, next) => listEquals(previous, next)),
-      selectedSubject.distinct(),
+      observeMemeTexts(),
+      observeSelected(),
       (list, selected) => MemeState(list: list, selected: selected),
     ).listen((state) {
       stateSubject.add(state);

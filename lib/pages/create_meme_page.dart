@@ -82,24 +82,25 @@ class _EditTextBarState extends State<EditTextBar> {
               _controller.text = text;
               _controller.selection = TextSelection.collapsed(offset: text.length);
             }
-            if (meme != null) _focus.requestFocus();
+            final isSelected = meme != null;
+            if (isSelected) _focus.requestFocus();
             return TextField(
-              enabled: meme != null,
+              enabled: isSelected,
               controller: _controller,
               focusNode: _focus,
               onChanged: (value) {
-                if (meme != null) bloc.changeText(meme.id, value);
+                if (isSelected) bloc.changeText(meme.id, value);
               },
               onEditingComplete: bloc.deselectText,
               // onTapOutside: (_) => Fx.unFocus(),
               decoration: InputDecoration(
                 filled: true,
-                fillColor: meme != null ? AppColors.fuchsia16 : AppColors.grey6,
+                fillColor: isSelected ? AppColors.fuchsia16 : AppColors.grey6,
                 border: UnderlineInputBorder(
-                    borderSide: BorderSide(color: meme != null ? AppColors.fuchsia38 : AppColors.grey38)),
+                    borderSide: BorderSide(color: isSelected ? AppColors.fuchsia38 : AppColors.grey38)),
                 focusColor: AppColors.fuchsia16,
                 focusedBorder: const UnderlineInputBorder(borderSide: BorderSide(color: AppColors.fuchsia, width: 2)),
-                hintText: meme != null ? 'Введите текст' : null,
+                hintText: isSelected ? 'Введите текст' : null,
                 hintStyle: TextStyle(fontSize: 16, color: AppColors.grey38),
               ),
               cursorColor: AppColors.fuchsia,
@@ -126,7 +127,6 @@ class CreateMemePageContent extends StatefulWidget {
 class _CreateMemePageContentState extends State<CreateMemePageContent> {
   @override
   Widget build(BuildContext context) {
-    final bloc = Provider.of<CreateMemeBloc>(context, listen: false);
     return Column(
       children: [
         const Expanded(
@@ -141,38 +141,48 @@ class _CreateMemePageContentState extends State<CreateMemePageContent> {
           flex: 1,
           child: Container(
             color: Colors.white,
-            child: StreamBuilder(
-              stream: bloc.observeState(),
-              builder: (context, snapshot) {
-                final state = Fx.validateStreamData(snapshot) ? snapshot.data : null;
-                if (state == null) return const SizedBox.shrink();
-                return ListView.separated(
-                  itemBuilder: (context, index) {
-                    if (index == 0) return const AddMemeTextButton();
-                    return Container(
-                      height: 48,
-                      alignment: Alignment.centerLeft,
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      color: state.selected?.id == state.list[index - 1].id ? AppColors.grey16 : null,
-                      child: Text(
-                        state.list[index - 1].text,
-                        style: const TextStyle(
-                          fontSize: 16,
-                          color: AppColors.grey,
-                        ),
-                      ),
-                    );
-                  },
-                  separatorBuilder: (context, index) => index == 0
-                      ? const SizedBox.shrink()
-                      : Container(margin: const EdgeInsets.only(left: 16), color: AppColors.grey, height: 1),
-                  itemCount: state.list.length + 1,
-                );
-              },
-            ),
+            child: const BottomMemeList(),
           ),
         ),
       ],
+    );
+  }
+}
+
+class BottomMemeList extends StatelessWidget {
+  const BottomMemeList({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final bloc = Provider.of<CreateMemeBloc>(context, listen: false);
+    return StreamBuilder(
+      stream: bloc.observeState(),
+      builder: (context, snapshot) {
+        final state = Fx.validateStreamData(snapshot) ? snapshot.data : null;
+        if (state == null) return const SizedBox.shrink();
+        return ListView.separated(
+          itemBuilder: (context, index) {
+            if (index == 0) return const AddMemeTextButton();
+            return Container(
+              height: 48,
+              alignment: Alignment.centerLeft,
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              color: state.selected?.id == state.list[index - 1].id ? AppColors.grey16 : null,
+              child: Text(
+                state.list[index - 1].text,
+                style: const TextStyle(
+                  fontSize: 16,
+                  color: AppColors.grey,
+                ),
+              ),
+            );
+          },
+          separatorBuilder: (context, index) => index == 0
+              ? const SizedBox.shrink()
+              : Container(margin: const EdgeInsets.only(left: 16), color: AppColors.grey, height: 1),
+          itemCount: state.list.length + 1,
+        );
+      },
     );
   }
 }
@@ -236,8 +246,8 @@ class _MemeTextWidgetState extends State<MemeTextWidget> {
   static const double padding = 8;
   static const double line = 24;
 
-  double left = 0;
-  double top = 0;
+  late double left;
+  late double top;
 
   @override
   void initState() {
@@ -259,7 +269,7 @@ class _MemeTextWidgetState extends State<MemeTextWidget> {
           left = calculateLeft(details);
           top = calculateTop(details);
         }),
-        onPanStart: (details) => bloc.selectText(widget.meme.id),
+        onPanStart: (_) => bloc.selectText(widget.meme.id),
         child: Container(
           constraints: BoxConstraints(
             maxWidth: widget.box.maxWidth,
