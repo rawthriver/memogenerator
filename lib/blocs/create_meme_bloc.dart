@@ -7,10 +7,20 @@ import 'package:collection/collection.dart';
 class CreateMemeBloc {
   final memeTextsSubject = BehaviorSubject<List<MemeText>>.seeded([]);
   final selectedSubject = BehaviorSubject<MemeText?>();
+  final stateSubject = BehaviorSubject<MemeState>.seeded(MemeState.empty());
 
-  Stream<List<MemeText>> observeMemeTexts() =>
-      memeTextsSubject.distinct((previous, next) => listEquals(previous, next));
   Stream<MemeText?> observeSelected() => selectedSubject.distinct();
+  Stream<MemeState> observeState() => stateSubject;
+
+  CreateMemeBloc() {
+    Rx.combineLatest2(
+      memeTextsSubject.distinct((previous, next) => listEquals(previous, next)),
+      selectedSubject.distinct(),
+      (list, selected) => MemeState(list: list, selected: selected),
+    ).listen((state) {
+      stateSubject.add(state);
+    });
+  }
 
   void addText() {
     final meme = MemeText.create();
@@ -40,6 +50,7 @@ class CreateMemeBloc {
   void dispose() {
     memeTextsSubject.close();
     selectedSubject.close();
+    stateSubject.close();
   }
 }
 
@@ -65,4 +76,16 @@ class MemeText {
 
   @override
   String toString() => 'MemeText(id: $id, text: $text)';
+}
+
+class MemeState {
+  final List<MemeText> list;
+  final MemeText? selected;
+
+  MemeState({
+    required this.list,
+    required this.selected,
+  });
+
+  factory MemeState.empty() => MemeState(list: [], selected: null);
 }
