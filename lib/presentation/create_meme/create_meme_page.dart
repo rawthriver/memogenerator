@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_utils/flutter_utils.dart';
-import 'package:memogenerator/blocs/create_meme_bloc.dart';
+import 'package:memogenerator/presentation/create_meme/create_meme_bloc.dart';
+import 'package:memogenerator/presentation/create_meme/models/meme_text.dart';
 import 'package:memogenerator/resources/app_colors.dart';
 import 'package:provider/provider.dart';
 
@@ -27,6 +27,15 @@ class _CreateMemePageState extends State<CreateMemePage> {
       child: Scaffold(
         appBar: AppBar(
           title: const Text('Создаём мем'),
+          actions: [
+            Padding(
+              padding: const EdgeInsets.only(right: 16),
+              child: IconButton(
+                icon: const Icon(Icons.save_outlined),
+                onPressed: bloc.save,
+              ),
+            )
+          ],
           backgroundColor: AppColors.lemon,
           foregroundColor: AppColors.grey,
           bottom: const EditTextBar(),
@@ -76,7 +85,7 @@ class _EditTextBarState extends State<EditTextBar> {
       child: StreamBuilder<MemeText?>(
           stream: bloc.observeSelected(),
           builder: (context, snapshot) {
-            final meme = Fx.validateStreamData(snapshot) ? snapshot.data : null;
+            final meme = snapshot.hasData ? snapshot.data : null;
             final text = meme?.text ?? '';
             if (text != _controller.text) {
               _controller.text = text;
@@ -158,7 +167,7 @@ class BottomMemeList extends StatelessWidget {
     return StreamBuilder(
       stream: bloc.observeState(),
       builder: (context, snapshot) {
-        final state = Fx.validateStreamData(snapshot) ? snapshot.data : null;
+        final state = snapshot.hasData ? snapshot.data : null;
         if (state == null) return const SizedBox.shrink();
         return ListView.separated(
           itemBuilder: (context, index) {
@@ -204,7 +213,7 @@ class MemeCanvasWidget extends StatelessWidget {
           child: StreamBuilder(
             stream: bloc.observeState(),
             builder: (context, snapshot) {
-              final state = Fx.validateStreamData(snapshot) ? snapshot.data : null;
+              final state = snapshot.hasData ? snapshot.data : null;
               if (state == null) return const SizedBox.shrink();
               return Container(
                 color: Colors.white,
@@ -265,10 +274,13 @@ class _MemeTextWidgetState extends State<MemeTextWidget> {
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
         onTap: () => bloc.selectText(widget.meme.id),
-        onPanUpdate: (details) => setState(() {
-          left = calculateLeft(details);
-          top = calculateTop(details);
-        }),
+        onPanUpdate: (details) {
+          setState(() {
+            left = calculateLeft(details);
+            top = calculateTop(details);
+            bloc.changeOffset(widget.meme.id, Offset(left, top));
+          });
+        },
         onPanStart: (_) => bloc.selectText(widget.meme.id),
         child: Container(
           constraints: BoxConstraints(

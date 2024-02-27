@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:memogenerator/blocs/main_bloc.dart';
-import 'package:memogenerator/pages/create_meme_page.dart';
+import 'package:memogenerator/data/models/meme.dart';
+import 'package:memogenerator/presentation/main/main_bloc.dart';
+import 'package:memogenerator/presentation/create_meme/create_meme_page.dart';
 import 'package:memogenerator/resources/app_colors.dart';
 import 'package:provider/provider.dart';
 
@@ -68,6 +69,22 @@ class MainPageContent extends StatefulWidget {
 class _MainPageContentState extends State<MainPageContent> {
   @override
   Widget build(BuildContext context) {
-    return Container();
+    final bloc = Provider.of<MainBloc>(context, listen: false);
+    return StreamBuilder(
+      stream: bloc.observeMemes(),
+      builder: (context, snapshot) {
+        final list = snapshot.hasData && snapshot.data != null ? snapshot.data : <Meme>[];
+        if (list == null) return const SizedBox.shrink();
+        return ListView.builder(
+          itemBuilder: (context, index) {
+            return Padding(
+              padding: const EdgeInsets.all(16),
+              child: Text(list[index].id),
+            );
+          },
+          itemCount: list.length,
+        );
+      },
+    );
   }
 }
