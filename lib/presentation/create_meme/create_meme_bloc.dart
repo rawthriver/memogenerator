@@ -33,7 +33,7 @@ class CreateMemeBloc {
 
   CreateMemeBloc() {
     _createStateListener();
-    _createOffsetdebouncer();
+    _createOffsetDebouncer();
   }
 
   void _createStateListener() {
@@ -46,7 +46,7 @@ class CreateMemeBloc {
     });
   }
 
-  void _createOffsetdebouncer() {
+  void _createOffsetDebouncer() {
     offsetDebouncerSubscription = offsetDebouncerSubject.debounceTime(const Duration(milliseconds: 300)).listen(
       (offset) {
         if (offset != null) _changeOffset(offset);
@@ -119,5 +119,6 @@ class CreateMemeBloc {
     selectedSubject.close();
     stateSubject.close();
     offsetSubject.close();
+    offsetDebouncerSubject.close();
   }
 }

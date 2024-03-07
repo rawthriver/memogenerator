@@ -1,6 +1,6 @@
 import 'package:rxdart/rxdart.dart';
 import 'package:memogenerator/data/models/meme.dart';
-import 'package:memogenerator/data/shared_preferences.dart';
+import 'package:memogenerator/data/shared_preferences_storage.dart';
 
 class MemeRepository {
   final SharedPreferencesStorage _storage;

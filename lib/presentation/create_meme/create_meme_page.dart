@@ -83,38 +83,39 @@ class _EditTextBarState extends State<EditTextBar> {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
       child: StreamBuilder<MemeText?>(
-          stream: bloc.observeSelected(),
-          builder: (context, snapshot) {
-            final meme = snapshot.hasData ? snapshot.data : null;
-            final text = meme?.text ?? '';
-            if (text != _controller.text) {
-              _controller.text = text;
-              _controller.selection = TextSelection.collapsed(offset: text.length);
-            }
-            final isSelected = meme != null;
-            if (isSelected) _focus.requestFocus();
-            return TextField(
-              enabled: isSelected,
-              controller: _controller,
-              focusNode: _focus,
-              onChanged: (value) {
-                if (isSelected) bloc.changeText(meme.id, value);
-              },
-              onEditingComplete: bloc.deselectText,
-              // onTapOutside: (_) => Fx.unFocus(),
-              decoration: InputDecoration(
-                filled: true,
-                fillColor: isSelected ? AppColors.fuchsia16 : AppColors.grey6,
-                border: UnderlineInputBorder(
-                    borderSide: BorderSide(color: isSelected ? AppColors.fuchsia38 : AppColors.grey38)),
-                focusColor: AppColors.fuchsia16,
-                focusedBorder: const UnderlineInputBorder(borderSide: BorderSide(color: AppColors.fuchsia, width: 2)),
-                hintText: isSelected ? 'Введите текст' : null,
-                hintStyle: TextStyle(fontSize: 16, color: AppColors.grey38),
-              ),
-              cursorColor: AppColors.fuchsia,
-            );
-          }),
+        stream: bloc.observeSelected(),
+        builder: (context, snapshot) {
+          final meme = snapshot.hasData ? snapshot.data : null;
+          final text = meme?.text ?? '';
+          if (text != _controller.text) {
+            _controller.text = text;
+            _controller.selection = TextSelection.collapsed(offset: text.length);
+          }
+          final isSelected = meme != null;
+          if (isSelected) _focus.requestFocus();
+          return TextField(
+            enabled: isSelected,
+            controller: _controller,
+            focusNode: _focus,
+            onChanged: (value) {
+              if (isSelected) bloc.changeText(meme.id, value);
+            },
+            onEditingComplete: bloc.deselectText,
+            // onTapOutside: (_) => Fx.unFocus(),
+            decoration: InputDecoration(
+              filled: true,
+              fillColor: isSelected ? AppColors.fuchsia16 : AppColors.grey6,
+              border: UnderlineInputBorder(
+                  borderSide: BorderSide(color: isSelected ? AppColors.fuchsia38 : AppColors.grey38)),
+              focusColor: AppColors.fuchsia16,
+              focusedBorder: const UnderlineInputBorder(borderSide: BorderSide(color: AppColors.fuchsia, width: 2)),
+              hintText: isSelected ? 'Введите текст' : null,
+              hintStyle: TextStyle(fontSize: 16, color: AppColors.grey38),
+            ),
+            cursorColor: AppColors.fuchsia,
+          );
+        },
+      ),
     );
   }
 
