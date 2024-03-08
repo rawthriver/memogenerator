@@ -10,6 +10,7 @@ import 'package:memogenerator/data/repositories/meme_repository.dart';
 import 'package:memogenerator/presentation/create_meme/models/meme_text_offset.dart';
 import 'package:memogenerator/presentation/create_meme/models/meme_state.dart';
 import 'package:memogenerator/presentation/create_meme/models/meme_text.dart';
+import 'package:memogenerator/presentation/create_meme/models/meme_text_with_offset.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:collection/collection.dart';
 import 'package:uuid/uuid.dart';
@@ -26,14 +27,35 @@ class CreateMemeBloc {
   Stream<MemeText?> observeSelected() => selectedSubject.distinct();
   Stream<MemeState> observeState() => stateSubject;
 
+  Stream<List<MemeTextWithOffset>> observeMemeTextsWithOffset() {
+    return Rx.combineLatest2(observeMemeTexts(), offsetSubject.distinct(), (texts, offsets) {
+      return texts.map((t) {
+        final MemeTextOffset? o = offsets.firstWhereOrNull((o) => o.id == t.id);
+        return MemeTextWithOffset(id: t.id, text: t.text, offset: o?.offset ?? Offset.zero);
+      }).toList();
+    }).distinct((previous, next) => listEquals(previous, next));
+  }
+
   StreamSubscription<MemeTextOffset?>? offsetDebouncerSubscription;
   StreamSubscription<bool>? saveSubscription;
+  StreamSubscription<Meme?>? loadSubscription;
 
-  final String id = const Uuid().v4();
+  final String id;
 
-  CreateMemeBloc() {
+  CreateMemeBloc({final String? id}) : id = id ?? const Uuid().v4() {
     _createStateListener();
     _createOffsetDebouncer();
+    loadSubscription = MemeRepository.getInstance().get(this.id).asStream().listen((meme) {
+      if (meme == null) return;
+      final texts = meme.texts.map((t) {
+        return MemeText(id: t.id, text: t.text);
+      }).toList();
+      memeTextsSubject.add(texts);
+      final offsets = meme.texts.map((t) {
+        return MemeTextOffset(id: t.id, offset: Offset(t.position.left, t.position.top));
+      }).toList();
+      offsetSubject.add(offsets);
+    });
   }
 
   void _createStateListener() {
@@ -72,7 +94,7 @@ class CreateMemeBloc {
       }).toList(),
     );
     // ensure stream will be closed
-    saveSubscription = MemeRepository.getInstance().add(meme).asStream().listen((_) {}, onError: print);
+    saveSubscription = MemeRepository.getInstance().add(meme).asStream().listen(null, onError: print);
   }
 
   void addText() {
@@ -114,6 +136,7 @@ class CreateMemeBloc {
   void dispose() {
     offsetDebouncerSubscription?.cancel();
     saveSubscription?.cancel();
+    loadSubscription?.cancel();
 
     memeTextsSubject.close();
     selectedSubject.close();

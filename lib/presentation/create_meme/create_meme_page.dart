@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:memogenerator/presentation/create_meme/create_meme_bloc.dart';
 import 'package:memogenerator/presentation/create_meme/models/meme_text.dart';
+import 'package:memogenerator/presentation/create_meme/models/meme_text_with_offset.dart';
 import 'package:memogenerator/resources/app_colors.dart';
 import 'package:provider/provider.dart';
 
 class CreateMemePage extends StatefulWidget {
-  const CreateMemePage({super.key});
+  final String? id;
+
+  const CreateMemePage({super.key, this.id});
 
   @override
   State<CreateMemePage> createState() => _CreateMemePageState();
@@ -17,7 +20,7 @@ class _CreateMemePageState extends State<CreateMemePage> {
   @override
   void initState() {
     super.initState();
-    bloc = CreateMemeBloc();
+    bloc = CreateMemeBloc(id: widget.id);
   }
 
   @override
@@ -101,7 +104,7 @@ class _EditTextBarState extends State<EditTextBar> {
               if (isSelected) bloc.changeText(meme.id, value);
             },
             onEditingComplete: bloc.deselectText,
-            // onTapOutside: (_) => Fx.unFocus(),
+            // onTapOutside: Fx.unFocus,
             decoration: InputDecoration(
               filled: true,
               fillColor: isSelected ? AppColors.fuchsia16 : AppColors.grey6,
@@ -212,17 +215,17 @@ class MemeCanvasWidget extends StatelessWidget {
         child: GestureDetector(
           onTap: () => bloc.deselectText(),
           child: StreamBuilder(
-            stream: bloc.observeState(),
+            stream: bloc.observeMemeTextsWithOffset(),
             builder: (context, snapshot) {
-              final state = snapshot.hasData ? snapshot.data : null;
-              if (state == null) return const SizedBox.shrink();
+              final list = snapshot.hasData ? snapshot.data : null;
+              if (list == null) return const SizedBox.shrink();
               return Container(
                 color: Colors.white,
                 child: LayoutBuilder(
                   builder: (context, constraints) {
                     return Stack(
-                      children: state.list.map((meme) {
-                        return MemeTextWidget(meme: meme, box: constraints, isSelected: state.selected?.id == meme.id);
+                      children: list.map((text) {
+                        return MemeTextWidget(text: text, box: constraints);
                       }).toList(),
                     );
                   },
@@ -237,15 +240,13 @@ class MemeCanvasWidget extends StatelessWidget {
 }
 
 class MemeTextWidget extends StatefulWidget {
-  final MemeText meme;
+  final MemeTextWithOffset text;
   final BoxConstraints box;
-  final bool isSelected;
 
   const MemeTextWidget({
     super.key,
-    required this.meme,
+    required this.text,
     required this.box,
-    required this.isSelected,
   });
 
   @override
@@ -262,8 +263,13 @@ class _MemeTextWidgetState extends State<MemeTextWidget> {
   @override
   void initState() {
     super.initState();
-    left = widget.box.maxWidth / 3;
-    top = widget.box.maxHeight / 2 - padding * 2 - line;
+    if (widget.text.offset == Offset.zero) {
+      left = widget.box.maxWidth / 3;
+      top = widget.box.maxHeight / 2 - padding * 2 - line;
+    } else {
+      left = widget.text.offset.dx;
+      top = widget.text.offset.dy;
+    }
   }
 
   @override
@@ -274,33 +280,27 @@ class _MemeTextWidgetState extends State<MemeTextWidget> {
       top: top,
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
-        onTap: () => bloc.selectText(widget.meme.id),
+        onTap: () => bloc.selectText(widget.text.id),
         onPanUpdate: (details) {
           setState(() {
             left = calculateLeft(details);
             top = calculateTop(details);
-            bloc.changeOffset(widget.meme.id, Offset(left, top));
+            bloc.changeOffset(widget.text.id, Offset(left, top));
           });
         },
-        onPanStart: (_) => bloc.selectText(widget.meme.id),
-        child: Container(
-          constraints: BoxConstraints(
-            maxWidth: widget.box.maxWidth,
-            maxHeight: widget.box.maxHeight,
-          ),
-          padding: const EdgeInsets.all(padding),
-          decoration: BoxDecoration(
-            color: widget.isSelected ? AppColors.grey16 : null,
-            border: Border.all(color: widget.isSelected ? AppColors.fuchsia : Colors.transparent),
-          ),
-          child: Text(
-            widget.meme.text,
-            textAlign: TextAlign.center,
-            style: const TextStyle(
-              fontSize: 20,
-              color: AppColors.grey,
-            ),
-          ),
+        onPanStart: (_) => bloc.selectText(widget.text.id),
+        child: StreamBuilder<MemeText?>(
+          stream: bloc.observeSelected(),
+          builder: (context, snapshot) {
+            final text = snapshot.hasData ? snapshot.data : null;
+            final selected = widget.text.id == text?.id;
+            return MemeTextCanvas(
+              padding: padding,
+              text: widget.text,
+              box: widget.box,
+              selected: selected,
+            );
+          },
         ),
       ),
     );
@@ -318,6 +318,44 @@ class _MemeTextWidgetState extends State<MemeTextWidget> {
     if (l < 0) return 0;
     final w = widget.box.maxWidth - padding * 2 - line * 2;
     return l > w ? w : l;
+  }
+}
+
+class MemeTextCanvas extends StatelessWidget {
+  final double padding;
+  final BoxConstraints box;
+  final MemeTextWithOffset text;
+  final bool selected;
+
+  const MemeTextCanvas({
+    super.key,
+    required this.padding,
+    required this.box,
+    required this.text,
+    required this.selected,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      constraints: BoxConstraints(
+        maxWidth: box.maxWidth,
+        maxHeight: box.maxHeight,
+      ),
+      padding: EdgeInsets.all(padding),
+      decoration: BoxDecoration(
+        color: selected ? AppColors.grey16 : null,
+        border: Border.all(color: selected ? AppColors.fuchsia : Colors.transparent),
+      ),
+      child: Text(
+        text.text,
+        textAlign: TextAlign.center,
+        style: const TextStyle(
+          fontSize: 20,
+          color: AppColors.grey,
+        ),
+      ),
+    );
   }
 }
 

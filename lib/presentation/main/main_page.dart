@@ -72,14 +72,20 @@ class _MainPageContentState extends State<MainPageContent> {
     final bloc = Provider.of<MainBloc>(context, listen: false);
     return StreamBuilder(
       stream: bloc.observeMemes(),
+      initialData: const <Meme>[],
       builder: (context, snapshot) {
-        final list = snapshot.hasData && snapshot.data != null ? snapshot.data : <Meme>[];
+        final list = snapshot.hasData && snapshot.data != null ? snapshot.data : const <Meme>[];
         if (list == null) return const SizedBox.shrink();
         return ListView.builder(
           itemBuilder: (context, index) {
-            return Padding(
-              padding: const EdgeInsets.all(16),
-              child: Text(list[index].id),
+            return GestureDetector(
+              onTap: () =>
+                  Navigator.of(context).push(MaterialPageRoute(builder: (_) => CreateMemePage(id: list[index].id))),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                alignment: Alignment.centerLeft,
+                child: Text(list[index].id),
+              ),
             );
           },
           itemCount: list.length,
