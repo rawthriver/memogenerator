@@ -3,17 +3,15 @@ import 'package:equatable/equatable.dart';
 
 import 'package:memogenerator/presentation/create_meme/models/meme_text.dart';
 
-class MemeState extends Equatable {
-  final List<MemeText> list;
-  final MemeText? selected;
+class MemeTextWithSelection extends Equatable {
+  final MemeText text;
+  final bool selected;
 
-  const MemeState({
-    required this.list,
+  const MemeTextWithSelection({
+    required this.text,
     required this.selected,
   });
 
-  factory MemeState.empty() => const MemeState(list: [], selected: null);
-
   @override
-  List<Object?> get props => [list, selected];
+  List<Object?> get props => [text, selected];
 }

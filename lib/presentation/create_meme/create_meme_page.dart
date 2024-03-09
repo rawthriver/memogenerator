@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:memogenerator/presentation/create_meme/create_meme_bloc.dart';
+import 'package:memogenerator/presentation/create_meme/models/meme_state.dart';
 import 'package:memogenerator/presentation/create_meme/models/meme_text.dart';
 import 'package:memogenerator/presentation/create_meme/models/meme_text_with_offset.dart';
 import 'package:memogenerator/resources/app_colors.dart';
@@ -169,20 +170,20 @@ class BottomMemeList extends StatelessWidget {
   Widget build(BuildContext context) {
     final bloc = Provider.of<CreateMemeBloc>(context, listen: false);
     return StreamBuilder(
-      stream: bloc.observeState(),
+      stream: bloc.observeMemeTextsWithSelection(),
       builder: (context, snapshot) {
-        final state = snapshot.hasData ? snapshot.data : null;
-        if (state == null) return const SizedBox.shrink();
+        final list = snapshot.hasData ? snapshot.data! : <MemeTextWithSelection>[];
         return ListView.separated(
           itemBuilder: (context, index) {
             if (index == 0) return const AddMemeTextButton();
+            final item = list[index - 1];
             return Container(
               height: 48,
               alignment: Alignment.centerLeft,
               padding: const EdgeInsets.symmetric(horizontal: 16),
-              color: state.selected?.id == state.list[index - 1].id ? AppColors.grey16 : null,
+              color: item.selected ? AppColors.grey16 : null,
               child: Text(
-                state.list[index - 1].text,
+                item.text.text,
                 style: const TextStyle(
                   fontSize: 16,
                   color: AppColors.grey,
@@ -193,7 +194,7 @@ class BottomMemeList extends StatelessWidget {
           separatorBuilder: (context, index) => index == 0
               ? const SizedBox.shrink()
               : Container(margin: const EdgeInsets.only(left: 16), color: AppColors.grey, height: 1),
-          itemCount: state.list.length + 1,
+          itemCount: list.length + 1,
         );
       },
     );
@@ -214,14 +215,14 @@ class MemeCanvasWidget extends StatelessWidget {
         aspectRatio: 1,
         child: GestureDetector(
           onTap: () => bloc.deselectText(),
-          child: StreamBuilder(
-            stream: bloc.observeMemeTextsWithOffset(),
-            builder: (context, snapshot) {
-              final list = snapshot.hasData ? snapshot.data : null;
-              if (list == null) return const SizedBox.shrink();
-              return Container(
-                color: Colors.white,
-                child: LayoutBuilder(
+          child: Container(
+            color: Colors.white,
+            child: StreamBuilder(
+              stream: bloc.observeMemeTextsWithOffset(),
+              builder: (context, snapshot) {
+                final list = snapshot.hasData ? snapshot.data : null;
+                if (list == null) return const SizedBox.shrink();
+                return LayoutBuilder(
                   builder: (context, constraints) {
                     return Stack(
                       children: list.map((text) {
@@ -229,9 +230,9 @@ class MemeCanvasWidget extends StatelessWidget {
                       }).toList(),
                     );
                   },
-                ),
-              );
-            },
+                );
+              },
+            ),
           ),
         ),
       ),
@@ -263,13 +264,8 @@ class _MemeTextWidgetState extends State<MemeTextWidget> {
   @override
   void initState() {
     super.initState();
-    if (widget.text.offset == Offset.zero) {
-      left = widget.box.maxWidth / 3;
-      top = widget.box.maxHeight / 2 - padding * 2 - line;
-    } else {
-      left = widget.text.offset.dx;
-      top = widget.text.offset.dy;
-    }
+    left = widget.text.offset?.dx ?? widget.box.maxWidth / 3;
+    top = widget.text.offset?.dy ?? widget.box.maxHeight / 2 - padding * 2 - line;
   }
 
   @override
@@ -296,7 +292,7 @@ class _MemeTextWidgetState extends State<MemeTextWidget> {
             final selected = widget.text.id == text?.id;
             return MemeTextCanvas(
               padding: padding,
-              text: widget.text,
+              text: widget.text.text,
               box: widget.box,
               selected: selected,
             );
@@ -324,7 +320,7 @@ class _MemeTextWidgetState extends State<MemeTextWidget> {
 class MemeTextCanvas extends StatelessWidget {
   final double padding;
   final BoxConstraints box;
-  final MemeTextWithOffset text;
+  final String text;
   final bool selected;
 
   const MemeTextCanvas({
@@ -348,7 +344,7 @@ class MemeTextCanvas extends StatelessWidget {
         border: Border.all(color: selected ? AppColors.fuchsia : Colors.transparent),
       ),
       child: Text(
-        text.text,
+        text,
         textAlign: TextAlign.center,
         style: const TextStyle(
           fontSize: 20,

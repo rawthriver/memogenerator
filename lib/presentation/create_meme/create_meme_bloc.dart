@@ -18,20 +18,23 @@ import 'package:uuid/uuid.dart';
 class CreateMemeBloc {
   final memeTextsSubject = BehaviorSubject<List<MemeText>>.seeded([]);
   final selectedSubject = BehaviorSubject<MemeText?>();
-  final stateSubject = BehaviorSubject<MemeState>.seeded(MemeState.empty());
   final offsetSubject = BehaviorSubject<List<MemeTextOffset>>.seeded([]);
   final offsetDebouncerSubject = BehaviorSubject<MemeTextOffset?>.seeded(null);
 
   Stream<List<MemeText>> observeMemeTexts() =>
       memeTextsSubject.distinct((previous, next) => listEquals(previous, next));
   Stream<MemeText?> observeSelected() => selectedSubject.distinct();
-  Stream<MemeState> observeState() => stateSubject;
+  Stream<List<MemeTextWithSelection>> observeMemeTextsWithSelection() => Rx.combineLatest2(
+        observeMemeTexts(),
+        observeSelected(),
+        (list, selected) => list.map((e) => MemeTextWithSelection(text: e, selected: e.id == selected?.id)).toList(),
+      );
 
   Stream<List<MemeTextWithOffset>> observeMemeTextsWithOffset() {
     return Rx.combineLatest2(observeMemeTexts(), offsetSubject.distinct(), (texts, offsets) {
       return texts.map((t) {
         final MemeTextOffset? o = offsets.firstWhereOrNull((o) => o.id == t.id);
-        return MemeTextWithOffset(id: t.id, text: t.text, offset: o?.offset ?? Offset.zero);
+        return MemeTextWithOffset(id: t.id, text: t.text, offset: o?.offset);
       }).toList();
     }).distinct((previous, next) => listEquals(previous, next));
   }
@@ -43,9 +46,21 @@ class CreateMemeBloc {
   final String id;
 
   CreateMemeBloc({final String? id}) : id = id ?? const Uuid().v4() {
-    _createStateListener();
     _createOffsetDebouncer();
-    loadSubscription = MemeRepository.getInstance().get(this.id).asStream().listen((meme) {
+    _createLoader();
+  }
+
+  void _createOffsetDebouncer() {
+    offsetDebouncerSubscription = offsetDebouncerSubject.debounceTime(const Duration(milliseconds: 300)).listen(
+      (offset) {
+        if (offset != null) _changeOffset(offset);
+      },
+      onError: print,
+    );
+  }
+
+  void _createLoader() {
+    loadSubscription = MemeRepository.getInstance().get(id).asStream().listen((meme) {
       if (meme == null) return;
       final texts = meme.texts.map((t) {
         return MemeText(id: t.id, text: t.text);
@@ -56,25 +71,6 @@ class CreateMemeBloc {
       }).toList();
       offsetSubject.add(offsets);
     });
-  }
-
-  void _createStateListener() {
-    Rx.combineLatest2(
-      observeMemeTexts(),
-      observeSelected(),
-      (list, selected) => MemeState(list: list, selected: selected),
-    ).listen((state) {
-      stateSubject.add(state);
-    });
-  }
-
-  void _createOffsetDebouncer() {
-    offsetDebouncerSubscription = offsetDebouncerSubject.debounceTime(const Duration(milliseconds: 300)).listen(
-      (offset) {
-        if (offset != null) _changeOffset(offset);
-      },
-      onError: print,
-    );
   }
 
   void save() {
@@ -140,7 +136,6 @@ class CreateMemeBloc {
 
     memeTextsSubject.close();
     selectedSubject.close();
-    stateSubject.close();
     offsetSubject.close();
     offsetDebouncerSubject.close();
   }
