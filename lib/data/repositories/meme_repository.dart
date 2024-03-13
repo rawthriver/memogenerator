@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:rxdart/rxdart.dart';
 import 'package:memogenerator/data/models/meme.dart';
 import 'package:memogenerator/data/shared_preferences_storage.dart';
@@ -11,9 +13,10 @@ class MemeRepository {
   MemeRepository._(this._storage);
 
   Future<bool> add(final Meme meme) async {
-    final raw = await _storage.getMemes();
-    raw.add(meme.toJson());
-    return _setRaw(raw);
+    final list = await _getList();
+    list.removeWhere((e) => e.id == meme.id);
+    list.add(meme);
+    return _setList(list);
   }
 
   Future<bool> remove(final String id) async {

@@ -8,16 +8,15 @@ import 'package:memogenerator/data/models/text_with_position.dart';
 class Meme extends Equatable {
   final String id;
   final List<TextWithPosition> texts;
+  final String? photo;
 
-  const Meme({
-    required this.id,
-    required this.texts,
-  });
+  const Meme({required this.id, required this.texts, this.photo});
 
   Map<String, dynamic> toMap() {
     return <String, dynamic>{
       'id': id,
       'texts': texts.map((x) => x.toMap()).toList(),
+      'photo': photo,
     };
   }
 
@@ -29,6 +28,7 @@ class Meme extends Equatable {
           (x) => TextWithPosition.fromMap(x as Map<String, dynamic>),
         ),
       ),
+      photo: map['photo'] != null ? map['photo'] as String : null,
     );
   }
 
@@ -37,5 +37,5 @@ class Meme extends Equatable {
   factory Meme.fromJson(String source) => Meme.fromMap(json.decode(source) as Map<String, dynamic>);
 
   @override
-  List<Object> get props => [id, texts];
+  List<Object?> get props => [id, texts, photo];
 }

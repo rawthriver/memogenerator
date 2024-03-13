@@ -46,7 +46,12 @@ class _MainPageState extends State<MainPage> {
           backgroundColor: AppColors.fuchsia,
           foregroundColor: Colors.white,
           shape: const StadiumBorder(),
-          onPressed: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const CreateMemePage())),
+          onPressed: () async {
+            final photo = await bloc.selectMemePhoto();
+            if (photo == null) return;
+            if (!context.mounted) return;
+            Navigator.of(context).push(MaterialPageRoute(builder: (_) => CreateMemePage(photo: photo)));
+          },
         ),
       ),
     );
@@ -78,13 +83,18 @@ class _MainPageContentState extends State<MainPageContent> {
         if (list == null) return const SizedBox.shrink();
         return ListView.builder(
           itemBuilder: (context, index) {
+            final meme = list[index];
             return GestureDetector(
-              onTap: () =>
-                  Navigator.of(context).push(MaterialPageRoute(builder: (_) => CreateMemePage(id: list[index].id))),
+              onTap: () => Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => CreateMemePage(id: meme.id),
+                ),
+              ),
               child: Container(
+                height: 48,
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 alignment: Alignment.centerLeft,
-                child: Text(list[index].id),
+                child: Text(meme.id),
               ),
             );
           },
