@@ -13,7 +13,7 @@ class MemeRepository {
   MemeRepository._(this._storage);
 
   Future<bool> add(final Meme meme) async {
-    final list = await _getList();
+    final list = await getList();
     int i = list.indexWhere((e) => e.id == meme.id);
     if (i < 0) {
       list.add(meme);
@@ -25,24 +25,24 @@ class MemeRepository {
   }
 
   Future<bool> remove(final String id) async {
-    final list = await _getList();
+    final list = await getList();
     list.removeWhere((e) => e.id == id);
     return _setList(list);
   }
 
   Future<Meme?> get(final String id) async {
-    final list = await _getList();
+    final list = await getList();
     return list.where((e) => e.id == id).firstOrNull;
   }
 
   Stream<List<Meme>> observe() async* {
-    yield await _getList();
+    yield await getList();
     await for (final _ in _updater) {
-      yield await _getList();
+      yield await getList();
     }
   }
 
-  Future<List<Meme>> _getList() async {
+  Future<List<Meme>> getList() async {
     final raw = await _storage.getMemes();
     return raw.map((e) => Meme.fromJson(e)).toList();
   }

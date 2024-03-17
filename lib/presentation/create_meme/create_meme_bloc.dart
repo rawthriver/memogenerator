@@ -107,7 +107,7 @@ class CreateMemeBloc {
     }).toList();
     // graceful cleanup
     saveSubscription = SaveMemeInteractor.getInstance()
-        .saveMeme(id, texts, memePhotoSubject.value)
+        .saveMeme(id: id, texts: texts, photo: memePhotoSubject.value)
         .asStream()
         .listen(null, onError: print);
   }

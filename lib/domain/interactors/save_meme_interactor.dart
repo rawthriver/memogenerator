@@ -12,7 +12,11 @@ class SaveMemeInteractor {
 
   SaveMemeInteractor._();
 
-  Future<bool> saveMeme(final String id, final List<TextWithPosition> texts, final String? photo) async {
+  Future<bool> saveMeme({
+    required final String id,
+    required final List<TextWithPosition> texts,
+    final String? photo,
+  }) async {
     var currentPath = photo;
     if (currentPath != null) {
       final docs = await getApplicationDocumentsDirectory();
