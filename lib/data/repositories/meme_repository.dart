@@ -14,8 +14,13 @@ class MemeRepository {
 
   Future<bool> add(final Meme meme) async {
     final list = await _getList();
-    list.removeWhere((e) => e.id == meme.id);
-    list.add(meme);
+    int i = list.indexWhere((e) => e.id == meme.id);
+    if (i < 0) {
+      list.add(meme);
+    } else {
+      list.removeAt(i);
+      list.insert(i, meme);
+    }
     return _setList(list);
   }
 

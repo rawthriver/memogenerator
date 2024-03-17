@@ -8,6 +8,7 @@ import 'package:memogenerator/data/models/meme.dart';
 import 'package:memogenerator/data/models/position.dart';
 import 'package:memogenerator/data/models/text_with_position.dart';
 import 'package:memogenerator/data/repositories/meme_repository.dart';
+import 'package:memogenerator/domain/interactors/save_meme_interactor.dart';
 import 'package:memogenerator/presentation/create_meme/models/meme_text_offset.dart';
 import 'package:memogenerator/presentation/create_meme/models/meme_text_with_selection.dart';
 import 'package:memogenerator/presentation/create_meme/models/meme_text.dart';
@@ -105,30 +106,33 @@ class CreateMemeBloc {
       );
     }).toList();
     // graceful cleanup
-    saveSubscription = _save(texts).asStream().listen(null, onError: print);
+    saveSubscription = SaveMemeInteractor.getInstance()
+        .saveMeme(id, texts, memePhotoSubject.value)
+        .asStream()
+        .listen(null, onError: print);
   }
 
-  Future<bool> _save(final List<TextWithPosition> texts) async {
-    var currentPath = memePhotoSubject.value;
-    if (currentPath != null) {
-      final docs = await getApplicationDocumentsDirectory();
-      final memesPath = '${docs.absolute.path}${Platform.pathSeparator}memes';
-      await Directory(memesPath).create();
-      final fileName = currentPath.split(Platform.pathSeparator).last;
-      final savePath = '$memesPath${Platform.pathSeparator}$fileName';
-      if (currentPath != savePath) {
-        await File(currentPath).copy(savePath);
-        currentPath = savePath;
-        memePhotoSubject.add(currentPath);
-      }
-    }
-    final meme = Meme(
-      id: id,
-      texts: texts,
-      photo: currentPath,
-    );
-    return MemeRepository.getInstance().add(meme);
-  }
+  // Future<bool> _save(final List<TextWithPosition> texts) async {
+  //   var currentPath = memePhotoSubject.value;
+  //   if (currentPath != null) {
+  //     final docs = await getApplicationDocumentsDirectory();
+  //     final memesPath = '${docs.absolute.path}${Platform.pathSeparator}memes';
+  //     await Directory(memesPath).create();
+  //     final fileName = currentPath.split(Platform.pathSeparator).last;
+  //     final savePath = '$memesPath${Platform.pathSeparator}$fileName';
+  //     if (currentPath != savePath) {
+  //       await File(currentPath).copy(savePath);
+  //       currentPath = savePath;
+  //       memePhotoSubject.add(currentPath);
+  //     }
+  //   }
+  //   final meme = Meme(
+  //     id: id,
+  //     texts: texts,
+  //     photo: currentPath,
+  //   );
+  //   return MemeRepository.getInstance().add(meme);
+  // }
 
   void addText() {
     final meme = MemeText.create();

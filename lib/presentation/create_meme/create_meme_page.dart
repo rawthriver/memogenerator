@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:memogenerator/presentation/create_meme/create_meme_bloc.dart';
 import 'package:memogenerator/presentation/create_meme/models/meme_text_with_selection.dart';
 import 'package:memogenerator/presentation/create_meme/models/meme_text.dart';
@@ -249,6 +250,10 @@ class _MemeTextWidgetState extends State<MemeTextWidget> {
     super.initState();
     left = widget.text.offset?.dx ?? widget.box.maxWidth / 3;
     top = widget.text.offset?.dy ?? widget.box.maxHeight / 2 - padding * 2 - line;
+    SchedulerBinding.instance.addPostFrameCallback((_) {
+      final bloc = Provider.of<CreateMemeBloc>(context, listen: false);
+      bloc.changeOffset(widget.text.id, Offset(left, top));
+    });
   }
 
   @override
@@ -352,20 +357,7 @@ class BottomMemeList extends StatelessWidget {
         return ListView.separated(
           itemBuilder: (context, index) {
             if (index == 0) return const AddMemeTextButton();
-            final item = list[index - 1];
-            return Container(
-              height: 48,
-              alignment: Alignment.centerLeft,
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              color: item.selected ? AppColors.grey16 : null,
-              child: Text(
-                item.text.text,
-                style: const TextStyle(
-                  fontSize: 16,
-                  color: AppColors.grey,
-                ),
-              ),
-            );
+            return BottomMemeItem(item: list[index - 1]);
           },
           separatorBuilder: (context, index) => index == 0
               ? const SizedBox.shrink()
@@ -373,6 +365,38 @@ class BottomMemeList extends StatelessWidget {
           itemCount: list.length + 1,
         );
       },
+    );
+  }
+}
+
+class BottomMemeItem extends StatelessWidget {
+  final MemeTextWithSelection item;
+
+  const BottomMemeItem({
+    super.key,
+    required this.item,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final bloc = Provider.of<CreateMemeBloc>(context, listen: false);
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: () => bloc.selectText(item.text.id),
+      child: Container(
+        width: double.infinity,
+        height: 48,
+        alignment: Alignment.centerLeft,
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        color: item.selected ? AppColors.grey16 : null,
+        child: Text(
+          item.text.text,
+          style: const TextStyle(
+            fontSize: 16,
+            color: AppColors.grey,
+          ),
+        ),
+      ),
     );
   }
 }
